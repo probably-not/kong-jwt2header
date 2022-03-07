@@ -81,7 +81,7 @@ function toHeaderKey(key)
 
     -- quick and dirty pascal casing
     local words = {}
-    for i, v in pairs(string.split(stringkey, "_")) do -- grab all the words separated with a _ underscore
+    for i, v in pairs(strsplit(stringkey, "_")) do -- grab all the words separated with a _ underscore
         table.insert(words, v:sub(1, 1):upper() .. v:sub(2)) -- we take the first character, uppercase, and add the rest. Then I insert to the table
     end
 
@@ -123,6 +123,19 @@ function toHeaderValue(value)
     end
 
     return tostring(value)
+end
+
+function strsplit(inputstr, sep)
+    if sep == nil then
+        sep = "%s"
+    end
+
+    local t = {}
+    for str in string.gmatch(inputstr, "([^" .. sep .. "]+)") do
+        table.insert(t, str)
+    end
+
+    return t
 end
 
 return JWT2Header
