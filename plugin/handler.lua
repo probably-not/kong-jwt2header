@@ -37,9 +37,9 @@ function JWT2Header:rewrite(conf)
 
     if kong.request.get_header("X-Kong-JWT-Kong-Proceed") == "yes" then
         for claim, value in pairs(claims) do
-            if type(claim) == "string" and type(value) == "string" then
-                kong.service.request.set_header("X-Kong-JWT-Claim-" .. claim, value)
-            end
+            local claimHeader = toHeaderKey(claim)
+            local valueHeader = toHeaderValue(value)
+            kong.service.request.set_header("X-Kong-JWT-Claim-" .. claimHeader, valueHeader)
         end
     end
 
@@ -73,6 +73,56 @@ function JWT2Header:access(conf)
         kong.service.request.clear_header("X-Kong-JWT-Kong-Proceed")
 
     end
+end
+
+-- converts a key to a header compatible key
+function toHeaderKey(key)
+    local stringkey = tostring(key)
+
+    -- quick and dirty pascal casing
+    local words = {}
+    for i, v in pairs(string.split(stringkey, "_")) do -- grab all the words separated with a _ underscore
+        table.insert(words, v:sub(1, 1):upper() .. v:sub(2)) -- we take the first character, uppercase, and add the rest. Then I insert to the table
+    end
+
+    return table.concat(words, "") -- just concat everything inside of the table
+end
+
+-- converts a value to a header compatible value
+-- will convert bool/numbers to strings, join arrays with ",", etc.
+function toHeaderValue(value)
+    if type(value) == "string" then
+        return value
+    end
+
+    if type(value) == "boolean" then
+        return tostring(value)
+    end
+
+    if type(value) == "number" then
+        return tostring(value) -- might want to use string.format instead?
+    end
+
+    if type(value) == "nil" then
+        return ""
+    end
+
+    if type(value) == "table" then
+        if value[1] == nil then
+            -- do something here to create string from dictionary table
+            local joineddict = {}
+
+            for k, val in pairs(value) do
+                table.insert(joineddict, tostring(k) .. "=" .. tostring(val))
+            end
+
+            return table.concat(joineddict, ",")
+        end
+
+        return table.concat(value, ",") -- array value can be simply joined
+    end
+
+    return tostring(value)
 end
 
 return JWT2Header
